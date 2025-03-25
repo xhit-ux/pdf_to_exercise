@@ -1,0 +1,8 @@
+com\exercise\Application.class
+com\exercise\service\QuestionService.class
+com\exercise\config\DataSourceConfig.class
+com\exercise\controller\HomeController.class
+com\exercise\controller\FileUploadController.class
+com\exercise\config\WebConfig.class
+com\exercise\controller\QuestionController.class
+com\exercise\util\ExamUtil.class

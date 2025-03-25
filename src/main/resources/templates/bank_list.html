@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>题库列表</title>
+    <style>
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+        .bubble {
+            position: fixed;
+            left: 50%;
+            top: 60%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            background: rgba(255, 69, 0, 0);
+            color: white;
+            font-size: 18px;
+            border-radius: 20px;
+            opacity: 0;
+            transition: all 0.5s ease-out;
+            pointer-events: none;
+        }
+
+        .bubble.show {
+            top: 30%;
+            background: rgba(255, 69, 0, 0.9);
+            opacity: 1;
+        }
+        .bank-list {
+            flex: 0.75;
+            background-color: #f4f4f9;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .bank-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .bank-list li {
+            margin: 10px 0;
+        }
+
+        .bank-list a {
+            display: block;
+            padding: 10px;
+            background-color: #fff;
+            color: #333;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .bank-list a:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .button {
+            display: inline-block;
+            width: 70%;
+            padding: 15px;
+            font-size: 18px;
+            text-decoration: none;
+            color: white;
+            background-color: #007bff;
+            border-radius: 5px;
+            transition: 0.3s;
+            border: none;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            /* 水平居中 */
+            align-items: center;
+            /* 垂直居中 */
+            height: 100vh;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        a.button {
+            display: inline-block;
+            width: 94%; /* 如果希望按钮大小一致，可以设置相同宽度 */
+            text-align: center; /* 如果需要，居中文本 */
+            cursor: pointer; /* 让链接看起来像按钮 */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>选择练习题库</h1>
+
+        <!-- 错误信息 -->
+        <div id="bubble" class="bubble" th:if="${error}" th:text="${error}"></div>
+
+        <!-- 题库列表 -->
+        <ul class="bank-list">
+            <li th:each="bank : ${banks}">
+                <a th:href="@{/questions/{name}(name=${bank})}" class="button" th:text="${bank}"></a>
+            </li>
+        </ul>
+
+        <!-- 综合练习 -->
+        <a th:href="@{/questions/combined}" class="button">综合练习模式</a>
+        <a href="/" class="button">回到首页</a>
+    </div>
+
+    <script>
+        // 让错误提示（如果有）显示并上浮
+        window.onload = function () {
+            let bubble = document.getElementById("bubble");
+            if (bubble) {
+                bubble.classList.add("show");
+                setTimeout(() => {
+                    bubble.classList.remove("show");
+                }, 2000);
+            }
+        };
+    </script>
+
+</body>
+
+</html>

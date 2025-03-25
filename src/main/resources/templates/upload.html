@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传题库</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .upload-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .file-input {
+            padding: 0.75rem;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .file-input:hover {
+            border-color: #007bff;
+        }
+
+        .file-input input[type="file"] {
+            display: none;
+        }
+
+        .password-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .password-input input {
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .password-input .tooltip {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .password-input .tooltip::after {
+            content: "?";
+            font-size: 1.2rem;
+            color: #007bff;
+        }
+
+        .password-input .tooltip:hover::before {
+            content: "当 PDF 被密码保护时请输入密码，否则请无视";
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .upload-button {
+            display: inline-block;
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            text-decoration: none;
+            color: white;
+            background-color: #007bff;
+            border-radius: 5px;
+            transition: 0.3s;
+            border: none;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        a.upload-button {
+            display: inline-block;
+            width: 94%; /* 如果希望按钮大小一致，可以设置相同宽度 */
+            text-align: center; /* 如果需要，居中文本 */
+            cursor: pointer; /* 让链接看起来像按钮 */
+        }
+
+        .upload-button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            margin-top: 1rem;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="upload-container">
+        <h1>上传题库文件</h1>
+
+        <!-- 文件上传表单 -->
+        <form class="upload-form" method="post" enctype="multipart/form-data" th:action="@{/upload}">
+            <!-- 文件选择区域 -->
+            <div class="file-input" onclick="document.getElementById('file').click()">
+                <span>点击选择文件或拖拽文件到这里</span>
+                <input type="file" id="file" name="file" accept=".pdf" required>
+            </div>
+
+            <!-- 密码输入区域 -->
+            <div class="password-input">
+                <input type="text" id="password" name="password" placeholder="请输入 PDF 密码">
+                <div class="tooltip"></div>
+            </div>
+
+            <!-- 上传按钮 -->
+            <button type="submit" class="upload-button">上传并解析</button>
+            <a href="/" class="upload-button">回到首页</a>
+        </form>
+
+        <!-- 上传结果提示 -->
+        <div th:if="${message}" class="message" th:text="${message}"></div>
+        <div th:if="${error}" class="error" th:text="${error}"></div>
+    </div>
+
+    <script>
+        // 动态显示文件名
+        document.getElementById('file').addEventListener('change', function (event) {
+            const fileInput = event.target;
+            const fileName = fileInput.files[0] ? fileInput.files[0].name : '点击选择文件或拖拽文件到这里';
+            fileInput.parentElement.querySelector('span').textContent = fileName;
+        });
+
+        // 拖拽文件支持
+        const fileInputDiv = document.querySelector('.file-input');
+        fileInputDiv.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileInputDiv.style.borderColor = '#007bff';
+        });
+
+        fileInputDiv.addEventListener('dragleave', () => {
+            fileInputDiv.style.borderColor = '#ccc';
+        });
+
+        fileInputDiv.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileInputDiv.style.borderColor = '#ccc';
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                document.getElementById('file').files = e.dataTransfer.files;
+                fileInputDiv.querySelector('span').textContent = file.name;
+            } else {
+                alert('仅支持 PDF 文件');
+            }
+        });
+    </script>
+</body>
+
+</html>

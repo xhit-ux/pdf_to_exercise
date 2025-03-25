@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>答题页面</title>
+    <style>
+        /* 全局样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左侧题库列表 */
+        .bank-list {
+            flex: 0.75;
+            background-color: #f4f4f9;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+        }
+
+        .bank-list h2 {
+            margin-top: 0;
+        }
+
+        .bank-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .bank-list li {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bank-list a {
+            text-decoration: none;
+            color: #333;
+        }
+
+        .bank-list a:hover {
+            color: #007bff;
+        }
+
+        .bank-list .current-bank {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .bank-list .current-bank::after {
+            content: " ✔";
+            color: rgb(37, 204, 255);
+        }
+
+        /* 中间题目区域 */
+        .question-container {
+            flex: 2.25;
+            padding: 20px;
+            background-color: #fff;
+            overflow-y: auto;
+        }
+
+        .question {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .question h3 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .options label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+        }
+
+        /* 右侧题号导航 */
+        .question-nav {
+            flex: 1;
+            background-color: #f4f4f9;
+            padding: 20px;
+            border-left: 1px solid #ddd;
+            overflow-y: auto;
+        }
+
+        .question-nav h2 {
+            margin-top: 0;
+        }
+
+        .question-nav ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .question-nav li {
+            margin: 5px;
+        }
+
+        .question-nav a {
+            display: block;
+            padding: 9px;
+            background-color: transparent; /* 透明背景 */
+            color: #007bff; /* 文字颜色 */
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            min-width: 20px;
+            font-size: 0.7em;
+            border: 2px solid #007bff; /* 添加蓝色边框 */
+        }
+
+        .question-nav a:hover {
+            background-color: #007bff; /* 鼠标悬停时填充颜色 */
+            color: white;
+        }
+        .options label {
+            display: inline-flex; /* 使题目和选项在同一行 */
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+        }
+        .back_button {
+            display: inline-block;
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            text-decoration: none;
+            color: white;
+            background-color: #007bff;
+            border-radius: 5px;
+            transition: 0.3s;
+            border: none;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        a.back_button {
+            display: inline-block;
+            width: 90%; /* 如果希望按钮大小一致，可以设置相同宽度 */
+            text-align: center; /* 如果需要，居中文本 */
+            cursor: pointer; /* 让链接看起来像按钮 */
+        }
+        .back_button:hover {
+            background-color: #e959d1;
+        }
+
+    </style>
+</head>
+
+<body>
+    <!-- 左侧题库列表 -->
+    <div class="bank-list">
+        <h2>题库列表</h2>
+        <ul>
+            <!-- 遍历所有题库 -->
+            <li th:each="bank : ${banks}">
+                <!-- 当前题库添加标记 -->
+                <a th:href="@{/questions/{name}(name=${bank})}" th:class="${bank == bankName ? 'current-bank' : ''}"
+                    th:text="${bank}"></a>
+            </li>
+            <!-- 综合题库 -->
+            <li>
+                <a th:href="@{/questions/combined}" th:class="${bankName == '综合练习' ? 'current-bank' : ''}"
+                    th:text="'综合练习'"></a>
+            </li>
+        </ul>
+        <a href="/" class="back_button">回到首页</a>
+    </div>
+
+    <!-- 中间题目区域 -->
+    <div class="question-container">
+        <!-- 遍历所有题目 -->
+        <div th:each="q, iter : ${questions}" class="question" th:id="'question-' + ${iter.index}"
+            th:data-correct="${q.ans}"> <!-- 正确答案绑定在这里 -->
+    
+            <h3 th:text="${iter.index + 1 + '. ' + q.question}"></h3>
+            <div class="options">
+                <!-- 动态渲染选项 -->
+                <div th:each="opt : ${T(com.exercise.util.ExamUtil).getOptions(q)}">
+                    <input type="radio" th:name="'answers[' + ${q.id} + ']'" th:value="${opt.key}" required>
+                    <label th:text="${opt.key + '. ' + opt.value}"></label>
+                </div>
+            </div>
+            <!-- 预留反馈区域 -->
+            <div class="feedback" th:id="'feedback-' + ${q.id}"></div>
+        </div>
+    </div>
+
+
+    <!-- 右侧题号导航 -->
+    <div class="question-nav">
+        <h2>题号导航</h2>
+        <ul>
+            <li th:each="q, iter : ${questions}">
+                <a th:href="'#question-' + ${iter.index}" th:id="'nav-question-' + ${q.id}" th:text="${iter.index + 1}"></a>
+            </li>
+        </ul>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // 记录每道题的定时器
+            let timers = {};
+
+            // 监听所有的单选按钮
+            document.querySelectorAll(".options input[type='radio']").forEach(input => {
+                input.addEventListener("change", function () {
+                    let questionId = this.name.match(/\d+/)[0]; // 获取题目ID
+                    let selectedValue = this.value;
+                    let correctAnswer = this.closest(".question").dataset.correct; // 正确答案（通过 Thymeleaf 绑定）
+                    let feedbackDiv = document.getElementById("feedback-" + questionId);
+                    let navButton = document.getElementById("nav-question-" + questionId);
+
+                    // 清除已有的定时器
+                    if (timers[questionId]) {
+                        clearTimeout(timers[questionId]);
+                    }
+
+                    // 设置 5 秒后检查答案
+                    timers[questionId] = setTimeout(function () {
+                        if (selectedValue === correctAnswer) {
+                            feedbackDiv.textContent = "回答正确！";
+                            feedbackDiv.style.color = "green";
+                            navButton.style.backgroundColor = "green"; // 题号变绿
+                            navButton.style.color = "white"; // 文字变白
+                        } else {
+                            feedbackDiv.textContent = "回答错误";
+                            feedbackDiv.style.color = "red";
+                            navButton.style.backgroundColor = "red"; // 题号变红
+                            navButton.style.color = "white"; // 文字变白
+                        }
+                    }, 1000);
+                });
+            });
+        });
+    </script>
+
+</body>
+
+</html>

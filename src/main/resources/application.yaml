@@ -1,0 +1,40 @@
+spring:
+    datasource:
+        url: jdbc:mariadb://localhost:3306/question_bank?useSSL=false&serverTimezone=Asia/Shanghai # 先连接到默认数据库
+        username: exercise
+        password: 12345678
+        driver-class-name: org.mariadb.jdbc.Driver
+        hikari:
+            connection-timeout: 30000
+            maximum-pool-size: 10
+
+    jpa:
+        database-platform: org.hibernate.dialect.MariaDBDialect
+        hibernate:
+            ddl-auto: none # 禁用 Hibernate 自动 DDL，避免与 schema.sql 冲突
+        show-sql: true
+
+    thymeleaf:
+        cache: false
+        prefix: classpath:/templates/
+        suffix: .html
+        mode: HTML
+        encoding: UTF-8
+
+server:
+    port: 8080
+    servlet:
+        context-path: /
+
+logging:
+    level:
+        root: info
+        org.springframework.web: debug
+        com.exercise: debug
+        com.zaxxer.hikari: DEBUG # 启用 HikariCP 连接池调试日志
+        org.hibernate.SQL: DEBUG # 启用 Hibernate SQL 日志
+        org.hibernate.type.descriptor.sql.BasicBinder: TRACE # 启用 SQL 参数绑定日志
+
+app:
+    python-path: /usr/bin/python3
+    max-file-size: 10MB

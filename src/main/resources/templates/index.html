@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>首页</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>练习平台</h1>
+        <a href="/upload" class="button">上传题目</a>
+
+        <a th:href="${hasQuestionBanks ? '/questions' : '#'}" class="button"
+            th:classappend="${hasQuestionBanks ? '' : 'disabled'}" th:attr="data-disabled=${!hasQuestionBanks}"
+            onclick="handleClick(this)">
+            选择题库开始练习
+        </a>
+
+        <a th:href="${hasQuestionBanks ? '/test' : '#'}" class="button"
+            th:classappend="${hasQuestionBanks ? '' : 'disabled'}" th:attr="data-disabled=${!hasQuestionBanks}"
+            onclick="handleClick(this)">
+            模拟测试
+        </a>
+    </div>
+
+    <!-- 提示气泡 -->
+    <div id="bubble" class="bubble">题库为空，请先上传题目！</div>
+
+    <script>
+        function handleClick(element) {
+            if (element.getAttribute("data-disabled") === "true") {
+                showBubble();
+                event.preventDefault(); // 阻止默认跳转
+            }
+        }
+
+        function showBubble() {
+            let bubble = document.getElementById("bubble");
+            bubble.classList.add("show"); // 添加动画效果
+            setTimeout(() => {
+                bubble.classList.remove("show"); // 2秒后消失
+            }, 2000);
+        }
+    </script>
+
+</body>
+
+</html>
