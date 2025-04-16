@@ -1,3 +1,4 @@
+import time
 import pdfplumber
 import re
 import sys
@@ -7,91 +8,99 @@ import pymysql
 import argparse
 
 def sanitize_table_name(name):
-    """ 规范化表名，去除特殊字符，并限制长度 """
+    """规范化表名，去除特殊字符，并限制长度，确保不为空"""
     cleaned = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode()
-    return re.sub(r'[^a-zA-Z0-9_]', '_', cleaned)[:64].lower()
+    cleaned = re.sub(r'[^a-zA-Z0-9_]', '_', cleaned)[:64].lower()
+    return cleaned or f"table_{int(time.time())}"
+
 
 def remove_page_numbers(content):
-    """ 过滤页码，例如 -1-、-2- 等 """
-    # 匹配页码格式：-数字-
-    page_number_pattern = re.compile(r'- \d+ -')
-    return page_number_pattern.sub('', content)
+    return re.sub(r'- ?\d+ -', '', content)
 
 def parse_pdf(pdf_path, password=None):
-    """ 解析 PDF 题库，返回表名、标题和解析后的问题列表 """
-    
-    # 读取 PDF 文本
     try:
         with pdfplumber.open(pdf_path, password=password) as pdf:
             content = '\n'.join(filter(None, (page.extract_text() for page in pdf.pages)))
     except Exception as e:
-        # 判断是否是密码错误
         if "password" in str(e).lower():
             return None, None, None, "PDF 文件需要密码，但提供的密码不正确或未提供密码。"
         return None, None, None, f"无法解析 PDF 文件：{str(e)}"
-    
-    # 过滤页码
+
     content = remove_page_numbers(content)
-    
     lines = [line.strip() for line in content.split('\n') if line.strip()]
-    
-    # 解析标题
     if not lines:
         return None, None, None, "PDF 内容为空，无法解析"
-    
+
     title = lines[0]
     table_name = sanitize_table_name(title)
-    
-    # 解析题目
+
     questions = []
     current_q = None
     current_option = None
-    
-    question_pattern = re.compile(r'^(\d+)．\s*(.+)$')  # 题目编号匹配
-    option_pattern = re.compile(r'^([A-H])[．.]?\s*(.*)$')  # 选项匹配（支持 A. 和 A．）
-    answer_pattern = re.compile(r'正确答案：([A-H]+)')  # 多选支持，例如 "正确答案：AC"
-    
+
+    # 题目行：1、xxx (B)
+    question_pattern = re.compile(r'^(\d+)[、．. ]+(.+)$')
+    embedded_answer_pattern = re.compile(r'^(.*?)[。？?.（(] ?([A-H]) ?[)）]\s*$')
+    option_pattern = re.compile(r'^([A-H])[．.、]?\s*(.+)$')
+    explicit_answer_pattern = re.compile(r'正确答案[:：]?\s*([A-H]+)', re.IGNORECASE)
+
     for line in lines[1:]:
-        # 匹配答案
-        if answer_match := answer_pattern.match(line):
+        # 显式答案行
+        if explicit_answer_pattern.match(line):
+            answer = explicit_answer_pattern.match(line).group(1).strip()
             if current_q:
-                current_q['ans'] = answer_match.group(1)
+                current_q['ans'] = answer
                 questions.append(current_q)
                 current_q = None
-                current_option = None  # 重置选项
+                current_option = None
             continue
-        
-        # 匹配题目编号
-        if question_match := question_pattern.match(line):
+
+        # 新题目行（题干可能内嵌答案）
+        if question_pattern.match(line):
             if current_q:
                 questions.append(current_q)
-            current_q = {'question': question_match.group(2).strip(), 'A': '', 'B': '', 'C': '', 'D': '', 'E': '','F': '','G': '','H': '','ans': None}
-            current_option = None  # 新题目开始时重置选项
+            num, body = question_pattern.match(line).groups()
+            body = body.strip()
+
+            embedded_match = embedded_answer_pattern.match(body)
+            if embedded_match:
+                question_text = embedded_match.group(1).strip()
+                answer = embedded_match.group(2).strip()
+            else:
+                question_text = body
+                answer = None
+
+            current_q = {
+                'question': question_text,
+                'A': '', 'B': '', 'C': '', 'D': '',
+                'E': '', 'F': '', 'G': '', 'H': '',
+                'ans': answer,
+                'images': []
+            }
+            current_option = None
             continue
-        
-        # 匹配选项
-        if option_match := option_pattern.match(line):
-            option_key = option_match.group(1)  # A, B, C, D
+
+        # 选项行
+        if option_pattern.match(line):
             if current_q:
-                current_q[option_key] = option_match.group(2).strip()
-                current_option = option_key
+                key, value = option_pattern.match(line).groups()
+                current_q[key] = value.strip()
+                current_option = key
             continue
-        
-        # **题干换行合并**
+
+        # 题干续行
         if current_q and current_option is None:
-            # 当前行不是新题目、不是选项，也不是答案 => 题目换行
-            current_q["question"] += " " + line.strip()
+            current_q['question'] += " " + line.strip()
             continue
-        
-        # **选项换行合并**
+
+        # 选项续行
         if current_q and current_option:
             current_q[current_option] += " " + line.strip()
-    
-    # 处理最后一个题目
-    if current_q and current_q['ans'] is not None:
+
+    # 最后一题
+    if current_q and current_q.get('ans'):
         questions.append(current_q)
 
-    # 返回解析结果
     return table_name, title, questions, None
 
 
@@ -101,18 +110,18 @@ def save_to_db(table_name, questions):
             host='127.0.0.1',
             user='exercise',
             password='12345678',
-            db='question_bank',  # 指定数据库
+            db='question_bank',
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor
         )
-        
+
         with conn.cursor() as cursor:
             cursor.execute(f"""
                 CREATE TABLE IF NOT EXISTS `{table_name}` (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     question TEXT,
-                    A VARCHAR(512), B VARCHAR(512), C VARCHAR(512), D VARCHAR(512),
-                    E VARCHAR(512), F VARCHAR(512), G VARCHAR(512), H VARCHAR(512),
+                    A VARCHAR(1024), B VARCHAR(1024), C VARCHAR(1024), D VARCHAR(1024),
+                    E VARCHAR(1024), F VARCHAR(1024), G VARCHAR(1024), H VARCHAR(1024),
                     image1 LONGBLOB, image2 LONGBLOB, image3 LONGBLOB,
                     ans VARCHAR(10)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -124,7 +133,7 @@ def save_to_db(table_name, questions):
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             for q in questions:
-                image_data = q.get('images', [])  # 默认 []
+                image_data = q.get('images', [])
                 image1 = image_data[0] if len(image_data) > 0 else None
                 image2 = image_data[1] if len(image_data) > 1 else None
                 image3 = image_data[2] if len(image_data) > 2 else None
@@ -135,7 +144,6 @@ def save_to_db(table_name, questions):
                     image1, image2, image3,
                     q['ans']
                 ))
-
         conn.commit()
     except Exception as e:
         print(f"Database error: {str(e)}")
@@ -144,26 +152,23 @@ def save_to_db(table_name, questions):
         if conn:
             conn.close()
 
+
 if __name__ == "__main__":
-    # 使用 argparse 解析命令行参数
     parser = argparse.ArgumentParser(description="解析 PDF 题库并保存到数据库")
     parser.add_argument("pdf_path", help="PDF 文件路径")
     parser.add_argument("--password", help="PDF 文件的密码（可选）", default=None)
     args = parser.parse_args()
 
-    pdf_path = args.pdf_path
-    password = args.password
-
-    if not os.path.isfile(pdf_path):
-        print(f"文件不存在: {pdf_path}")
+    if not os.path.isfile(args.pdf_path):
+        print(f"文件不存在: {args.pdf_path}")
         sys.exit(1)
-    
+
     try:
-        table_name, title, questions, error = parse_pdf(pdf_path, password)
+        table_name, title, questions, error = parse_pdf(args.pdf_path, args.password)
         if error:
             print(error)
             sys.exit(1)
-        
+
         save_to_db(table_name, questions)
         print(f"成功：创建表 '{table_name}'，并插入 {len(questions)} 条题目")
     except Exception as e:
