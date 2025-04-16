@@ -194,6 +194,17 @@
             th:data-correct="${q.ans}"> <!-- 正确答案绑定在这里 -->
     
             <h3 th:text="${iter.index + 1 + '. ' + q.question}"></h3>
+            <div class="question-images">
+                <img th:if="${q.image1 != null}"
+                    th:src="'data:image/png;base64,' + ${T(java.util.Base64).getEncoder().encodeToString(q.image1)}"
+                    style="max-width: 300px; display: block; margin-bottom: 10px;" />
+                <img th:if="${q.image2 != null}"
+                    th:src="'data:image/png;base64,' + ${T(java.util.Base64).getEncoder().encodeToString(q.image2)}"
+                    style="max-width: 300px; display: block; margin-bottom: 10px;" />
+                <img th:if="${q.image3 != null}"
+                    th:src="'data:image/png;base64,' + ${T(java.util.Base64).getEncoder().encodeToString(q.image3)}"
+                    style="max-width: 300px; display: block; margin-bottom: 10px;" />
+            </div>
             <div class="options">
                 <!-- 动态渲染选项 -->
                 <div th:each="opt : ${T(com.exercise.util.ExamUtil).getOptions(q)}">

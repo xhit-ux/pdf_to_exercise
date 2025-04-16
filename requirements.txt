@@ -1,3 +1,4 @@
 pdfplumber==0.10.3   # 解析 PDF
 pymysql==1.1.0       # 连接 MariaDB
 unicodedata2==15.0.0  # 处理 Unicode 规范化（如果 Python 版本较低）
+PyPDF2==3.0.1

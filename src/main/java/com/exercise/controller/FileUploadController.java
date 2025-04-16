@@ -10,76 +10,96 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class FileUploadController {
 
-    // 定义上传文件存储目录
     private static final String UPLOAD_DIR = "uploads";
 
     @GetMapping("/upload")
     public String uploadPage() {
-        return "upload"; // 返回 upload.html 页面
+        return "upload";
     }
 
-    @SuppressWarnings("null")
     @PostMapping("/upload")
     public String handleUpload(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "password", required = false) String password,
             Model model) {
+
         try {
-            // 校验文件类型
-            if (!file.getContentType().equals("application/pdf")) {
-                model.addAttribute("error", "仅支持 PDF 文件");
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.isBlank()) {
+                model.addAttribute("error", "未选择文件");
                 return "upload";
             }
 
-            // 创建上传目录（如果不存在）
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
+            String suffix = originalFilename.toLowerCase();
+            if (!suffix.endsWith(".pdf") && !suffix.endsWith(".docx")) {
+                model.addAttribute("error", "仅支持 PDF 或 Word (.docx) 文件");
+                return "upload";
             }
 
-            // 保存文件到 /uploads 目录
-            Path filePath = uploadPath.resolve(file.getOriginalFilename());
+            // 保存上传文件
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath))
+                Files.createDirectories(uploadPath);
+            Path filePath = uploadPath.resolve(originalFilename);
             file.transferTo(filePath);
 
-            // 调用 Python 脚本
-            String output = callPythonScript(filePath.toString(), null);
+            String output;
+            if (suffix.endsWith(".pdf")) {
+                Path finalPdf = filePath;
 
-            // 检查解析结果
+                if (password != null && !password.isBlank()) {
+                    Path decryptedPath = uploadPath.resolve("decrypted_" + originalFilename);
+                    String decryptOutput = callPythonScript("scripts/remove_pdf_password.py",
+                            new String[] { filePath.toString(), decryptedPath.toString(), password });
+
+                    if (!decryptOutput.contains("Success")) {
+                        model.addAttribute("error", "PDF 解密失败：" + decryptOutput);
+                        return "upload";
+                    }
+                    finalPdf = decryptedPath;
+                }
+
+                output = callPythonScript("scripts/pdf_parser.py", new String[] { finalPdf.toString() });
+            } else {
+                output = callPythonScript("scripts/word_parser.py", new String[] { filePath.toString() });
+            }
+
             if (output.contains("成功")) {
                 model.addAttribute("message", "上传成功：" + output);
             } else {
                 model.addAttribute("error", "解析失败：" + output);
             }
 
-            // 删除上传的文件
             Files.deleteIfExists(filePath);
         } catch (Exception e) {
             model.addAttribute("error", "服务器错误：" + e.getMessage());
+            e.printStackTrace();
         }
-        return "upload"; // 返回 upload.html 页面
+
+        return "upload";
     }
 
-    private String callPythonScript(String filePath, String password) throws IOException, InterruptedException {
-        // 构建 Python 脚本命令
-        String pythonScriptPath = "scripts/pdf_parser.py";
-        ProcessBuilder processBuilder = new ProcessBuilder("python", pythonScriptPath, filePath);
-
-        // 如果有密码，添加 --password 参数
-        if (password != null) {
-            processBuilder.command().add("--password");
-            processBuilder.command().add(password);
+    private String callPythonScript(String scriptPath, String[] args) throws IOException, InterruptedException {
+        List<String> command = new ArrayList<>();
+        command.add("python");
+        command.add(scriptPath);
+        if (args != null) {
+            for (String arg : args) {
+                command.add(arg);
+            }
         }
 
-        // 启动进程
-        Process process = processBuilder.redirectErrorStream(true).start();
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
 
-        // 获取执行结果
         StringBuilder output = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
@@ -88,7 +108,6 @@ public class FileUploadController {
             }
         }
 
-        // 等待进程结束
         process.waitFor();
         return output.toString();
     }

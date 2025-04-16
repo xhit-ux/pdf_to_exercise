@@ -107,35 +107,35 @@ def save_to_db(table_name, questions):
         )
         
         with conn.cursor() as cursor:
-            # 创建表（如果不存在）
             cursor.execute(f"""
                 CREATE TABLE IF NOT EXISTS `{table_name}` (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     question TEXT,
-                    A VARCHAR(512),
-                    B VARCHAR(512),
-                    C VARCHAR(512),
-                    D VARCHAR(512),
-                    E VARCHAR(512),
-                    F VARCHAR(512),
-                    G VARCHAR(512),
-                    H VARCHAR(512),
-                    ans VARCHAR(10)  -- 多选题支持
+                    A VARCHAR(512), B VARCHAR(512), C VARCHAR(512), D VARCHAR(512),
+                    E VARCHAR(512), F VARCHAR(512), G VARCHAR(512), H VARCHAR(512),
+                    image1 LONGBLOB, image2 LONGBLOB, image3 LONGBLOB,
+                    ans VARCHAR(10)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """)
-            
-            # 批量插入数据
+
             sql = f"""
                 INSERT INTO `{table_name}` 
-                (question, A, B, C, D, E, F, G, H, ans)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (question, A, B, C, D, E, F, G, H, image1, image2, image3, ans)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            batch_data = [
-                (q['question'], q['A'], q['B'], q['C'], q['D'], q['E'], q['F'], q['G'], q['H'], q['ans'])
-                for q in questions
-            ]
-            
-            cursor.executemany(sql, batch_data)
+            for q in questions:
+                image_data = q.get('images', [])  # 默认 []
+                image1 = image_data[0] if len(image_data) > 0 else None
+                image2 = image_data[1] if len(image_data) > 1 else None
+                image3 = image_data[2] if len(image_data) > 2 else None
+
+                cursor.execute(sql, (
+                    q['question'], q['A'], q['B'], q['C'], q['D'],
+                    q['E'], q['F'], q['G'], q['H'],
+                    image1, image2, image3,
+                    q['ans']
+                ))
+
         conn.commit()
     except Exception as e:
         print(f"Database error: {str(e)}")
