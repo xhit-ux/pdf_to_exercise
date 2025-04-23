@@ -6,17 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>答题页面</title>
     <style>
-        /* 全局样式 */
+        
         body {
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
             display: flex;
             height: 100vh;
-            overflow: hidden;
+            overflow: auto;
         }
 
-        /* 左侧题库列表 */
         .bank-list {
             flex: 0.75;
             background-color: #f4f4f9;
@@ -60,14 +59,6 @@
             color: rgb(37, 204, 255);
         }
 
-        /* 中间题目区域 */
-        .question-container {
-            flex: 2.25;
-            padding: 20px;
-            background-color: #fff;
-            overflow-y: auto;
-        }
-
         .question {
             margin-bottom: 40px;
             padding-bottom: 20px;
@@ -79,6 +70,12 @@
             font-size: 1.5em;
         }
 
+        .question-images img {
+            max-width: 300px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
         .options {
             display: flex;
             flex-direction: column;
@@ -86,13 +83,12 @@
         }
 
         .options label {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 10px;
             font-size: 1.1em;
         }
 
-        /* 右侧题号导航 */
         .question-nav {
             flex: 1;
             background-color: #f4f4f9;
@@ -120,65 +116,199 @@
         .question-nav a {
             display: block;
             padding: 9px;
-            background-color: transparent; /* 透明背景 */
-            color: #007bff; /* 文字颜色 */
+            background-color: transparent;
+            color: #007bff;
             text-decoration: none;
             border-radius: 5px;
             text-align: center;
             min-width: 20px;
             font-size: 0.7em;
-            border: 2px solid #007bff; /* 添加蓝色边框 */
+            border: 2px solid #007bff;
         }
 
         .question-nav a:hover {
-            background-color: #007bff; /* 鼠标悬停时填充颜色 */
+            background-color: #007bff;
             color: white;
         }
-        .options label {
-            display: inline-flex; /* 使题目和选项在同一行 */
-            align-items: center;
-            gap: 10px;
-            font-size: 1.1em;
-        }
+
         .back_button {
             display: inline-block;
-            width: 100%;
+            width: 90%;
             padding: 15px;
             font-size: 18px;
-            text-decoration: none;
+            text-align: center;
             color: white;
             background-color: #007bff;
             border-radius: 5px;
-            transition: 0.3s;
             border: none;
             cursor: pointer;
-            margin: 10px 0;
+            margin: 10px auto;
+            text-decoration: none;
         }
-        a.back_button {
-            display: inline-block;
-            width: 90%; /* 如果希望按钮大小一致，可以设置相同宽度 */
-            text-align: center; /* 如果需要，居中文本 */
-            cursor: pointer; /* 让链接看起来像按钮 */
-        }
+
         .back_button:hover {
             background-color: #e959d1;
         }
 
+        /* ======= 移动端顶部导航栏 ======= */
+        #mobile-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            height: 5vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            overflow: auto;
+            transition: top 0.3s ease;
+        }
+
+        #mobile-navbar button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+
+        /* ======= 抽屉菜单样式 ======= */
+        .side-drawer {
+            position: fixed;
+            top: 2vh;
+            bottom: 0;
+            width: 70%;
+            max-width: 300px;
+            background-color: #f4f4f9;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 998;
+        }
+
+        .side-drawer.right {
+            right: 0;
+            left: auto;
+            width: 57%;
+            transform: translateX(100%);
+        }
+
+        .side-drawer.right ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .side-drawer.right li {
+            margin: 5px;
+        }
+
+        .side-drawer.right a {
+            display: block;
+            padding: 9px;
+            background-color: transparent;
+            color: #007bff;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            min-width: 20px;
+            font-size: 0.7em;
+            border: 2px solid #007bff;
+        }
+
+        .side-drawer.right a:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .side-drawer.open {
+            transform: translateX(0);
+        }
+
+        .side-drawer ul {
+            list-style: none;
+            padding: 1rem;
+        }
+
+        .side-drawer a {
+            display: block;
+            margin: 10px 0;
+            text-decoration: none;
+            color: #007bff;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .side-drawer .current-bank {
+            font-weight: bold;
+            background-color: #007bff;
+            color: white;
+        }
+
+        .side-drawer .current-bank::after {
+            content: " ✔";
+            color: #00eaff;
+        }
+        #drawer-bank ul, #drawer-nav ul {
+            list-style: none;
+            padding: 1em;
+        }
+
+        /* ======= 题目主区域 ======= */
+        @media (max-width: 768px) {
+            #question-main {
+                margin-top: 3vh;
+                padding: 20px;
+                overflow-y: auto;
+                height: calc(100vh - 13vh);
+            }
+            .bank-list {
+                display: none;
+            }
+            .question-nav {
+                display: none;
+            }
+            .question-container {
+                display: none;
+            }
+        }
+        @media (min-width: 768px) {
+            #mobile-navbar {
+                display: none;
+            }
+            #question-main {
+                flex: 2.25;
+                padding: 20px;
+                background-color: #fff;
+                overflow-y: auto;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <!-- 左侧题库列表 -->
+    <div id="mobile-navbar">
+        <button id="toggle-bank">&#9776; 题库</button>
+        <span th:text="${bankName}">题库</span>
+        <button id="toggle-nav">题号 &#9776;</button>
+    </div>
+
     <div class="bank-list">
         <h2>题库列表</h2>
         <ul>
-            <!-- 遍历所有题库 -->
             <li th:each="bank : ${banks}">
-                <!-- 当前题库添加标记 -->
                 <a th:href="@{/questions/{name}(name=${bank})}" th:class="${bank == bankName ? 'current-bank' : ''}"
                     th:text="${bank}"></a>
             </li>
-            <!-- 综合题库 -->
             <li>
                 <a th:href="@{/questions/combined}" th:class="${bankName == '综合练习' ? 'current-bank' : ''}"
                     th:text="'综合练习'"></a>
@@ -187,38 +317,50 @@
         <a href="/" class="back_button">回到首页</a>
     </div>
 
-    <!-- 中间题目区域 -->
-    <div class="question-container">
-        <!-- 遍历所有题目 -->
-        <div th:each="q, iter : ${questions}" class="question" th:id="'question-' + ${iter.index}"
-            th:data-correct="${q.ans}"> <!-- 正确答案绑定在这里 -->
+    <!-- ==== 折叠抽屉 - 题库列表 ==== -->
+    <div id="drawer-bank" class="side-drawer left">
+        <ul>
+            <li th:each="bank : ${banks}">
+                <a th:href="@{/questions/{name}(name=${bank})}" th:text="${bank}"
+                    th:class="${bank == bankName ? 'current-bank' : ''}"></a>
+            </li>
+            <li>
+                <a th:href="@{/questions/combined}" th:text="'综合练习'"
+                    th:class="${bankName == '综合练习' ? 'current-bank' : ''}"></a>
+            </li>
+            <a href="/" class="back_button">回首页</a>
+        </ul>
+    </div>
+
     
+
+    <!-- ==== 中间题目区域 ==== -->
+    <div class="q-c" id="question-main">
+        <div th:each="q, iter : ${questions}" class="question" th:id="'question-' + ${iter.index}" th:data-correct="${q.ans}">
             <h3 th:text="${iter.index + 1 + '. ' + q.question}"></h3>
-            <div class="question-images">
+    
+            <!-- 图片显示 -->
+            <div class="q-i">
                 <img th:if="${q.image1 != null}"
-                    th:src="'data:image/png;base64,' + ${T(java.util.Base64).getEncoder().encodeToString(q.image1)}"
-                    style="max-width: 300px; display: block; margin-bottom: 10px;" />
+                    th:src="'data:image/png;base64,' + ${T(java.util.Base64).getEncoder().encodeToString(q.image1)}" />
                 <img th:if="${q.image2 != null}"
-                    th:src="'data:image/png;base64,' + ${T(java.util.Base64).getEncoder().encodeToString(q.image2)}"
-                    style="max-width: 300px; display: block; margin-bottom: 10px;" />
+                    th:src="'data:image/png;base64,' + ${T(java.util.Base64).getEncoder().encodeToString(q.image2)}" />
                 <img th:if="${q.image3 != null}"
-                    th:src="'data:image/png;base64,' + ${T(java.util.Base64).getEncoder().encodeToString(q.image3)}"
-                    style="max-width: 300px; display: block; margin-bottom: 10px;" />
+                    th:src="'data:image/png;base64,' + ${T(java.util.Base64).getEncoder().encodeToString(q.image3)}" />
             </div>
+    
             <div class="options">
-                <!-- 动态渲染选项 -->
                 <div th:each="opt : ${T(com.exercise.util.ExamUtil).getOptions(q)}">
                     <input type="radio" th:name="'answers[' + ${q.id} + ']'" th:value="${opt.key}" required>
                     <label th:text="${opt.key + '. ' + opt.value}"></label>
                 </div>
             </div>
-            <!-- 预留反馈区域 -->
             <div class="feedback" th:id="'feedback-' + ${q.id}"></div>
         </div>
     </div>
+    <!-- ===================================================================================================================================================== -->
 
 
-    <!-- 右侧题号导航 -->
     <div class="question-nav">
         <h2>题号导航</h2>
         <ul>
@@ -227,43 +369,87 @@
             </li>
         </ul>
     </div>
-
+    <!-- ==== 折叠抽屉 - 题号导航 ==== -->
+    <div id="drawer-nav" class="side-drawer right">
+        <ul>
+            <li th:each="q, iter : ${questions}">
+                <a th:href="'#question-' + ${iter.index}" th:text="${iter.index + 1}"
+                    th:id="'nav-question-mob-' + ${q.id}"></a>
+            </li>
+        </ul>
+    </div>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // 记录每道题的定时器
-            let timers = {};
+        const navbar = document.getElementById('mobile-navbar');
+        const main = document.getElementById('question-main');
+        let lastScrollTop = 0;
+        main.addEventListener('scroll', () => {
+            let scrollTop = main.scrollTop;
+            if (scrollTop > lastScrollTop) {
+                navbar.style.top = "-10vh"; // 上滑隐藏
+            } else {
+                navbar.style.top = "0"; // 下滑显示
+            }
+            lastScrollTop = scrollTop;
+        });
 
-            // 监听所有的单选按钮
+        // 抽屉开关逻辑
+        const drawerBank = document.getElementById("drawer-bank");
+        const drawerNav = document.getElementById("drawer-nav");
+
+        document.getElementById("toggle-bank").addEventListener("click", function () {
+            drawerBank.classList.toggle("open");
+            drawerNav.classList.remove("open"); // 只允许一个抽屉打开
+        });
+
+        document.getElementById("toggle-nav").addEventListener("click", function () {
+            drawerNav.classList.toggle("open");
+            drawerBank.classList.remove("open"); // 只允许一个抽屉打开
+        });
+
+        // 点击空白区域关闭抽屉（可选）
+        document.addEventListener("click", function (event) {
+            if (!drawerBank.contains(event.target) && !event.target.closest("#toggle-bank")) {
+                drawerBank.classList.remove("open");
+            }
+            if (!drawerNav.contains(event.target) && !event.target.closest("#toggle-nav")) {
+                drawerNav.classList.remove("open");
+            }
+        });
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let timers = {};
             document.querySelectorAll(".options input[type='radio']").forEach(input => {
                 input.addEventListener("change", function () {
-                    let questionId = this.name.match(/\d+/)[0]; // 获取题目ID
+                    let questionId = this.name.match(/\d+/)[0];
                     let selectedValue = this.value;
                     let correctAnswer = this.closest(".question").dataset.correct; // 正确答案（通过 Thymeleaf 绑定）
+                    console.log(selectedValue,"///",correctAnswer);
                     let feedbackDiv = document.getElementById("feedback-" + questionId);
                     let navButton = document.getElementById("nav-question-" + questionId);
-
-                    // 清除已有的定时器
-                    if (timers[questionId]) {
-                        clearTimeout(timers[questionId]);
-                    }
-
-                    // 设置 5 秒后检查答案
+                    let navmobButton = document.getElementById("nav-question-mob-" + questionId);
+                    if (timers[questionId]) clearTimeout(timers[questionId]);
                     timers[questionId] = setTimeout(function () {
                         if (selectedValue === correctAnswer) {
                             feedbackDiv.textContent = "回答正确！";
                             feedbackDiv.style.color = "green";
-                            navButton.style.backgroundColor = "green"; // 题号变绿
-                            navButton.style.color = "white"; // 文字变白
+                            navButton.style.backgroundColor = "green";
+                            navButton.style.color = "white";
+                            navmobButton.style.backgroundColor = "green";
+                            navmobButton.style.color = "white";
                         } else {
                             feedbackDiv.textContent = "回答错误";
                             feedbackDiv.style.color = "red";
-                            navButton.style.backgroundColor = "red"; // 题号变红
-                            navButton.style.color = "white"; // 文字变白
+                            navButton.style.backgroundColor = "red";
+                            navButton.style.color = "white";
+                            navmobButton.style.backgroundColor = "red";
+                            navmobButton.style.color = "white";
                         }
-                    }, 1000);
+                    }, 3000);//默认三秒判题
                 });
             });
         });
+        
     </script>
 
 </body>
